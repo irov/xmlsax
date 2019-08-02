@@ -1,3 +1,34 @@
+/******************************************************************************
+*
+* Author, Yuriy Levchenko <irov13@mail.ru>
+*
+* This is free and unencumbered software released into the public domain.
+*
+* Anyone is free to copy, modify, publish, use, compile, sell, or
+* distribute this software, either in source code form or as a compiled
+* binary, for any purpose, commercial or non - commercial, and by any
+* means.
+*
+* In jurisdictions that recognize copyright laws, the author or authors
+* of this software dedicate any and all copyright interest in the
+* software to the public domain.We make this dedication for the benefit
+* of the public at large and to the detriment of our heirs and
+* successors.We intend this dedication to be an overt act of
+* relinquishment in perpetuity of all present and future rights to this
+* software under copyright law.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+* OTHER DEALINGS IN THE SOFTWARE.
+*
+* For more information, please refer to <http://unlicense.org/>
+*
+*****************************************************************************/
+
 #include "xmlsax.h"
 
 #include <string.h>
@@ -270,7 +301,7 @@ static xmlsax_char_t * xmlsax_parse_node_attribute( xmlsax_attribute_t * _attr, 
     return end_node_attribute;
 }
 //////////////////////////////////////////////////////////////////////////
-static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks, xmlsax_char_t * _node )
+static xmlsax_char_t * xmlsax_parse_node( xmlsax_char_t * _node, const xmlsax_callbacks_t * _callbacks, void * _userdata )
 {
     xmlsax_char_t * begin_name_node = xmlsax_unfind( _node, ' ' );
 
@@ -288,7 +319,7 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
         {
             *end_name_node_end = '\0';
 
-            (*_callbacks->end_node)(begin_name_node_end);
+            (*_callbacks->end_node)(begin_name_node_end, _userdata);
 
             xmlsax_char_t * end_name_node2 = strchr( begin_name_node_end + 1, '>' );
 
@@ -298,7 +329,7 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
         {
             *end_name_node_end = '\0';
 
-            (*_callbacks->end_node)(begin_name_node_end);
+            (*_callbacks->end_node)(begin_name_node_end, _userdata);
 
             return end_name_node_end + 1;
         }
@@ -327,7 +358,7 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
     {
         *end_name_node = '\0';
 
-        (*_callbacks->begin_node)(begin_name_node);
+        (*_callbacks->begin_node)(begin_name_node, _userdata);
 
         xmlsax_char_t * find_node_attribute = xmlsax_unfind( end_name_node + 1, ' ' );
 
@@ -337,7 +368,7 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
         }
         else if( *find_node_attribute == '/' )
         {
-            (*_callbacks->end_node)(begin_name_node);
+            (*_callbacks->end_node)(begin_name_node, _userdata);
 
             xmlsax_char_t * end_name_node2 = strchr( find_node_attribute + 1, '>' );
 
@@ -354,7 +385,7 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
             return XMLSAX_NULLPTR;
         }
 
-        (*_callbacks->node_attributes)(begin_name_node, attr.count, attr.key, attr.value);
+        (*_callbacks->node_attributes)(begin_name_node, attr.count, attr.key, attr.value, _userdata);
 
         if( *end_node_attribute == '>' )
         {
@@ -362,7 +393,7 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
         }
         else if( *end_node_attribute == '/' )
         {
-            (*_callbacks->end_node)(begin_name_node);
+            (*_callbacks->end_node)(begin_name_node, _userdata);
 
             xmlsax_char_t * end_node_attribute2 = strchr( end_node_attribute + 1, '>' );
 
@@ -375,7 +406,7 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
     {
         *end_name_node = '\0';
 
-        (*_callbacks->begin_node)(begin_name_node);
+        (*_callbacks->begin_node)(begin_name_node, _userdata);
 
         return end_name_node + 1;
     }
@@ -383,8 +414,8 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
     {
         *end_name_node = '\0';
 
-        (*_callbacks->begin_node)(begin_name_node);
-        (*_callbacks->end_node)(begin_name_node);
+        (*_callbacks->begin_node)(begin_name_node, _userdata);
+        (*_callbacks->end_node)(begin_name_node, _userdata);
 
         xmlsax_char_t * end_name_node2 = strchr( end_name_node + 1, '>' );
         return end_name_node2 + 1;
@@ -393,7 +424,115 @@ static xmlsax_char_t * xmlsax_parse_node( const xmlsax_callbacks_t * _callbacks,
     return XMLSAX_NULLPTR;
 }
 //////////////////////////////////////////////////////////////////////////
-xmlsax_result_t xmlsax_parse( xmlsax_char_t * _buffer, const xmlsax_callbacks_t * _callbacks )
+static xmlsax_char_t * xmlsax_parse_node_wobe( xmlsax_char_t * _node, const xmlsax_callbacks_t * _callbacks, void * _userdata )
+{
+    xmlsax_char_t * begin_name_node = xmlsax_unfind( _node, ' ' );
+
+    if( *begin_name_node == '/' )
+    {
+        xmlsax_char_t * begin_name_node_end = xmlsax_unfind( begin_name_node + 1, ' ' );
+        xmlsax_char_t * end_name_node_end = strpbrk( begin_name_node, " >" );
+
+        if( end_name_node_end == XMLSAX_NULLPTR )
+        {
+            return XMLSAX_NULLPTR;
+        }
+
+        if( *end_name_node_end == ' ' )
+        {
+            *end_name_node_end = '\0';
+
+            xmlsax_char_t * end_name_node2 = strchr( begin_name_node_end + 1, '>' );
+
+            return end_name_node2 + 1;
+        }
+        else if( *end_name_node_end == '>' )
+        {
+            *end_name_node_end = '\0';
+
+            return end_name_node_end + 1;
+        }
+    }
+    else if( *begin_name_node == '!' )
+    {
+        xmlsax_char_t * end_name_node2 = strstr( begin_name_node + 1, "-->" );
+
+        return end_name_node2 + 3;
+    }
+    else if( *begin_name_node == '?' )
+    {
+        xmlsax_char_t * end_name_node2 = strstr( begin_name_node + 1, "?>" );
+
+        return end_name_node2 + 2;
+    }
+
+    xmlsax_char_t * end_name_node = strpbrk( begin_name_node, " />" );
+
+    if( end_name_node == XMLSAX_NULLPTR )
+    {
+        return XMLSAX_NULLPTR;
+    }
+
+    if( *end_name_node == ' ' )
+    {
+        *end_name_node = '\0';
+
+        xmlsax_char_t * find_node_attribute = xmlsax_unfind( end_name_node + 1, ' ' );
+
+        if( *find_node_attribute == '>' )
+        {
+            return find_node_attribute + 1;
+        }
+        else if( *find_node_attribute == '/' )
+        {
+            xmlsax_char_t * end_name_node2 = strchr( find_node_attribute + 1, '>' );
+
+            return end_name_node2 + 1;
+        }
+
+        xmlsax_attribute_t attr;
+        attr.count = 0;
+
+        xmlsax_char_t * end_node_attribute = xmlsax_parse_node_attribute( &attr, find_node_attribute, begin_name_node );
+
+        if( end_node_attribute == XMLSAX_NULLPTR )
+        {
+            return XMLSAX_NULLPTR;
+        }
+
+        (*_callbacks->node_attributes)(begin_name_node, attr.count, attr.key, attr.value, _userdata);
+
+        if( *end_node_attribute == '>' )
+        {
+            return end_node_attribute + 1;
+        }
+        else if( *end_node_attribute == '/' )
+        {
+            xmlsax_char_t * end_node_attribute2 = strchr( end_node_attribute + 1, '>' );
+
+            return end_node_attribute2 + 1;
+        }
+
+        return end_node_attribute;
+    }
+    else if( *end_name_node == '>' )
+    {
+        *end_name_node = '\0';
+
+        return end_name_node + 1;
+    }
+    else if( *end_name_node == '/' )
+    {
+        *end_name_node = '\0';
+
+        xmlsax_char_t * end_name_node2 = strchr( end_name_node + 1, '>' );
+        return end_name_node2 + 1;
+    }
+
+    return XMLSAX_NULLPTR;
+}
+//////////////////////////////////////////////////////////////////////////
+xmlsax_result_t xmlsax_parse( xmlsax_char_t * _buffer, const xmlsax_callbacks_t * _callbacks, void * _userdata )
 {
     xmlsax_char_t * begin_node = _buffer;
 
@@ -407,6 +546,11 @@ xmlsax_result_t xmlsax_parse( xmlsax_char_t * _buffer, const xmlsax_callbacks_t 
         begin_node += 3;
     }
 
+    typedef xmlsax_char_t * (*xmlsax_parse_node_t)(xmlsax_char_t * _node, const xmlsax_callbacks_t * _callbacks, void * _userdata);
+
+    xmlsax_parse_node_t parse_node = (_callbacks->begin_node == 0 && _callbacks->end_node == 0)
+        ? xmlsax_parse_node_wobe : xmlsax_parse_node;
+
     for( ;;)
     {
         begin_node = strchr( begin_node, '<' );
@@ -416,8 +560,8 @@ xmlsax_result_t xmlsax_parse( xmlsax_char_t * _buffer, const xmlsax_callbacks_t 
             break;
         }
 
-        begin_node = xmlsax_parse_node( _callbacks, begin_node + 1 );
-
+        begin_node = (*parse_node)(begin_node + 1, _callbacks, _userdata);
+        
         if( begin_node == XMLSAX_NULLPTR )
         {
             return XMLSAX_FALSE;
