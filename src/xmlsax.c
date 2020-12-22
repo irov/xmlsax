@@ -236,6 +236,10 @@ static xmlsax_result_t xmlsax_adapt_value_attribute( xmlsax_char_t * _value )
 
                 xmlsax_strmove( src, src_code );
             }break;
+        default: 
+            {
+                return XMLSAX_FALSE;
+            }break;
         }
     }
 
