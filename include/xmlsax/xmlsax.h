@@ -50,15 +50,15 @@ typedef struct xmlsax_attribute_t
     const xmlsax_char_t * value[64];
 } xmlsax_attribute_t;
 //////////////////////////////////////////////////////////////////////////
-typedef void(*xmlsax_callback_end_node_t)(xmlsax_char_t * _node, void * _userdata);
-typedef void(*xmlsax_callback_begin_node_t)(xmlsax_char_t * _node, void * _userdata);
-typedef void(*xmlsax_callback_node_attributes_t)(xmlsax_char_t * _node, uint32_t _count, const xmlsax_char_t ** _key, const xmlsax_char_t ** _value, void * _userdata);
+typedef void(*xmlsax_callback_begin_node_t)(const xmlsax_char_t * _node, void * _userdata);
+typedef void(*xmlsax_callback_end_node_t)(const xmlsax_char_t * _node, void * _userdata);
+typedef void(*xmlsax_callback_node_attributes_t)(const xmlsax_char_t * _node, uint32_t _count, const xmlsax_char_t ** _keys, const xmlsax_char_t ** _values, void * _userdata);
 //////////////////////////////////////////////////////////////////////////
 typedef struct xmlsax_callbacks_t
 {
     xmlsax_callback_begin_node_t begin_node;
-    xmlsax_callback_end_node_t end_node;
     xmlsax_callback_node_attributes_t node_attributes;
+    xmlsax_callback_end_node_t end_node;    
 } xmlsax_callbacks_t;
 //////////////////////////////////////////////////////////////////////////
 xmlsax_result_t xmlsax_parse( xmlsax_char_t * _buffer, const xmlsax_callbacks_t * _callbacks, void * _userdata );
