@@ -276,6 +276,12 @@ static xmlsax_char_t * xmlsax_parse_node_attribute( xmlsax_attribute_t * _attr, 
     }
 
     xmlsax_char_t * begin_value_node_attribute = strchr( end_name_node_attribute + 1, '"' );
+
+    if( begin_value_node_attribute == XMLSAX_NULLPTR )
+    {
+        return XMLSAX_NULLPTR;
+    }
+
     xmlsax_char_t * end_value_node_attribute = strchr( begin_value_node_attribute + 1, '"' );
 
     *end_value_node_attribute = '\0';
