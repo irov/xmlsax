@@ -54,11 +54,11 @@ static const uint8_t xmlsax_lookup_digits_tables[256] =
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
 };
 //////////////////////////////////////////////////////////////////////////
-static void xmlsax_strmove( xmlsax_char_t * _src, const xmlsax_char_t * _dst )
+static void xmlsax_strmove( xmlsax_char_t * _dst, const xmlsax_char_t * _src )
 {
-    size_t memmove_len = strlen( _dst );
-    memmove( _src, _dst, memmove_len );
-    _src[memmove_len] = '\0';
+    size_t memmove_len = strlen( _src );
+    memmove( _dst, _src, memmove_len );
+    _dst[memmove_len] = '\0';
 }
 //////////////////////////////////////////////////////////////////////////
 static xmlsax_result_t xmlsax_adapt_value_attribute( xmlsax_char_t * _value )
@@ -143,8 +143,8 @@ static xmlsax_result_t xmlsax_adapt_value_attribute( xmlsax_char_t * _value )
             {
                 if( src[2] == 'b' && src[3] == 's' && src[4] == 'p' && src[5] == ';' )
                 {
-                    *(src + 0) = -64; //0xC2
-                    *(src + 1) = -96; //0xA0
+                    *(src + 0) = (uint8_t)0xC2;
+                    *(src + 1) = (uint8_t)0xA0;
                     src += 2;
 
                     xmlsax_strmove( src, src + 4 );
@@ -246,7 +246,7 @@ static xmlsax_result_t xmlsax_adapt_value_attribute( xmlsax_char_t * _value )
     return XMLSAX_TRUE;
 }
 //////////////////////////////////////////////////////////////////////////
-inline static xmlsax_char_t * xmlsax_unfind( xmlsax_char_t * s, xmlsax_char_t ch )
+static xmlsax_char_t * xmlsax_unfind( xmlsax_char_t * s, xmlsax_char_t ch )
 {
     xmlsax_char_t * e = s;
     while( *e && *e == ch )
@@ -318,7 +318,7 @@ static xmlsax_char_t * xmlsax_parse_node( xmlsax_char_t * _node, const xmlsax_ca
     if( *begin_name_node == '/' )
     {
         xmlsax_char_t * begin_name_node_end = xmlsax_unfind( begin_name_node + 1, ' ' );
-        xmlsax_char_t * end_name_node_end = strpbrk( begin_name_node, " >" );
+        xmlsax_char_t * end_name_node_end = strpbrk( begin_name_node_end, " >" );
 
         if( end_name_node_end == XMLSAX_NULLPTR )
         {
@@ -441,7 +441,7 @@ static xmlsax_char_t * xmlsax_parse_node_wobe( xmlsax_char_t * _node, const xmls
     if( *begin_name_node == '/' )
     {
         xmlsax_char_t * begin_name_node_end = xmlsax_unfind( begin_name_node + 1, ' ' );
-        xmlsax_char_t * end_name_node_end = strpbrk( begin_name_node, " >" );
+        xmlsax_char_t * end_name_node_end = strpbrk( begin_name_node_end, " >" );
 
         if( end_name_node_end == XMLSAX_NULLPTR )
         {
